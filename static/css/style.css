@@ -192,6 +192,10 @@ body {
     cursor: grabbing;
 }
 
+.task-block.wrapped-task {
+    border-top: 3px dashed rgba(255, 255, 255, 0.5);
+}
+
 .task-name {
     font-weight: 600;
     margin-bottom: 5px;

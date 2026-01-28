@@ -162,8 +162,8 @@ function renderTasks() {
 
     // Render each task
     tasks.forEach(task => {
-        const block = createTaskBlock(task, 'task');
-        timeline.appendChild(block);
+        const blocks = createTaskBlock(task, 'task');
+        blocks.forEach(block => timeline.appendChild(block));
     });
 }
 
@@ -176,28 +176,58 @@ function renderSchedule() {
 
     // Render each schedule entry
     scheduleEntries.forEach(entry => {
-        const block = createTaskBlock(entry, 'schedule');
-        timeline.appendChild(block);
+        const blocks = createTaskBlock(entry, 'schedule');
+        blocks.forEach(block => timeline.appendChild(block));
     });
 }
 
 function createTaskBlock(item, type) {
+    const blocks = [];
+    const maxMinutes = 1440; // 24 hours in minutes
+
+    // Calculate position based on sunset time
+    let startMinutes;
+    if (item.start_time) {
+        startMinutes = timeToMinutesFromSunset(item.start_time);
+    } else {
+        startMinutes = 0; // Start at sunset
+    }
+
+    const endMinutes = startMinutes + item.duration;
+
+    // Check if task wraps around (extends beyond 24 hours)
+    if (endMinutes > maxMinutes) {
+        // Create first block (from start to end of day)
+        const firstBlockDuration = maxMinutes - startMinutes;
+        const firstBlock = createSingleBlock(item, type, startMinutes, firstBlockDuration, false);
+        blocks.push(firstBlock);
+
+        // Create second block (from start of day to end of task)
+        const secondBlockDuration = endMinutes - maxMinutes;
+        const secondBlock = createSingleBlock(item, type, 0, secondBlockDuration, true);
+        blocks.push(secondBlock);
+    } else {
+        // Normal case - no wrapping
+        const block = createSingleBlock(item, type, startMinutes, item.duration, false);
+        blocks.push(block);
+    }
+
+    return blocks;
+}
+
+function createSingleBlock(item, type, topPosition, height, isWrapped) {
     const block = document.createElement('div');
     block.className = 'task-block';
+    if (isWrapped) {
+        block.classList.add('wrapped-task');
+    }
     block.style.backgroundColor = item.color;
-    block.style.height = `${item.duration}px`; // 1 minute = 1 pixel
+    block.style.height = `${height}px`;
+    block.style.top = `${topPosition}px`;
     block.draggable = true;
     block.dataset.id = item.id;
     block.dataset.type = type;
-
-    // Calculate position based on sunset time
-    if (item.start_time) {
-        const minutesFromSunset = timeToMinutesFromSunset(item.start_time);
-        block.style.top = `${minutesFromSunset}px`;
-    } else {
-        // If no start time, position at top (sunset time)
-        block.style.top = '0px';
-    }
+    block.dataset.fullDuration = item.duration; // Store original duration for drag/drop
 
     // Create content
     const nameDiv = document.createElement('div');
@@ -209,6 +239,9 @@ function createTaskBlock(item, type) {
     timeDiv.textContent = `${item.duration} min`;
     if (item.start_time) {
         timeDiv.textContent += ` • ${item.start_time}`;
+    }
+    if (isWrapped) {
+        timeDiv.textContent += ' (continued)';
     }
 
     // Create action buttons

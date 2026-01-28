@@ -3,6 +3,7 @@
 let draggedElement = null;
 let draggedData = null;
 let dropZoneIndicator = null;
+let autoScrollInterval = null;
 
 // Setup drag and drop listeners when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
@@ -15,6 +16,7 @@ function setupDragAndDrop() {
     const dailyTimeline = document.getElementById('daily-timeline');
 
     [optimalTimeline, dailyTimeline].forEach(timeline => {
+        timeline.addEventListener('dragenter', handleDragEnter);
         timeline.addEventListener('dragover', handleDragOver);
         timeline.addEventListener('drop', handleDrop);
         timeline.addEventListener('dragleave', handleDragLeave);
@@ -24,6 +26,21 @@ function setupDragAndDrop() {
     dropZoneIndicator = document.createElement('div');
     dropZoneIndicator.className = 'drop-zone';
     dropZoneIndicator.style.display = 'none';
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    if (!draggedElement) return;
+
+    const timeline = e.currentTarget;
+
+    // Ensure drop zone is in the correct timeline
+    if (!dropZoneIndicator.parentElement || dropZoneIndicator.parentElement !== timeline) {
+        if (dropZoneIndicator.parentElement) {
+            dropZoneIndicator.remove();
+        }
+        timeline.appendChild(dropZoneIndicator);
+    }
 }
 
 // Add drag listeners to task blocks
@@ -44,11 +61,25 @@ function handleDragStart(e) {
     draggedElement.classList.add('dragging');
 
     // Store data about the dragged item
+    // Use fullDuration from dataset (for wrapped tasks) or fall back to height
+    const duration = draggedElement.dataset.fullDuration
+        ? parseInt(draggedElement.dataset.fullDuration)
+        : parseInt(draggedElement.style.height);
+
     draggedData = {
         id: parseInt(draggedElement.dataset.id),
         type: draggedElement.dataset.type,
-        duration: parseInt(draggedElement.style.height)
+        duration: duration
     };
+
+    // If this is a wrapped task, add dragging class to sibling blocks too
+    const timeline = draggedElement.closest('.timeline');
+    if (timeline) {
+        const siblingBlocks = timeline.querySelectorAll(
+            `.task-block[data-id="${draggedData.id}"][data-type="${draggedData.type}"]`
+        );
+        siblingBlocks.forEach(block => block.classList.add('dragging'));
+    }
 
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', draggedElement.innerHTML);
@@ -61,15 +92,42 @@ function handleDragOver(e) {
     if (!draggedElement) return;
 
     const timeline = e.currentTarget;
+    const container = timeline.parentElement;
     const rect = timeline.getBoundingClientRect();
-    const y = e.clientY - rect.top + timeline.parentElement.scrollTop;
+    const containerRect = container.getBoundingClientRect();
+
+    // Calculate position relative to timeline, accounting for scroll
+    const y = e.clientY - containerRect.top + container.scrollTop;
+
+    // Auto-scroll when near edges
+    const scrollZone = 50; // pixels from edge to trigger scroll
+    const scrollSpeed = 10;
+
+    clearInterval(autoScrollInterval);
+
+    if (e.clientY < containerRect.top + scrollZone && container.scrollTop > 0) {
+        // Scroll up
+        autoScrollInterval = setInterval(() => {
+            container.scrollTop = Math.max(0, container.scrollTop - scrollSpeed);
+        }, 20);
+    } else if (e.clientY > containerRect.bottom - scrollZone &&
+               container.scrollTop < container.scrollHeight - container.clientHeight) {
+        // Scroll down
+        autoScrollInterval = setInterval(() => {
+            const maxScroll = container.scrollHeight - container.clientHeight;
+            container.scrollTop = Math.min(maxScroll, container.scrollTop + scrollSpeed);
+        }, 20);
+    }
 
     // Snap to 15-minute grid
     const minutes = snapToGrid(y);
     const snappedY = minutes;
 
     // Show drop zone indicator
-    if (!dropZoneIndicator.parentElement) {
+    if (!dropZoneIndicator.parentElement || dropZoneIndicator.parentElement !== timeline) {
+        if (dropZoneIndicator.parentElement) {
+            dropZoneIndicator.remove();
+        }
         timeline.appendChild(dropZoneIndicator);
     }
 
@@ -79,15 +137,21 @@ function handleDragOver(e) {
 }
 
 function handleDragLeave(e) {
+    // Only hide if we're leaving the timeline container (not just entering a child element)
     const timeline = e.currentTarget;
-    const rect = timeline.getBoundingClientRect();
+    const relatedTarget = e.relatedTarget;
 
-    // Only hide if we're actually leaving the timeline
-    if (e.clientX < rect.left || e.clientX >= rect.right ||
-        e.clientY < rect.top || e.clientY >= rect.bottom) {
-        if (dropZoneIndicator) {
-            dropZoneIndicator.style.display = 'none';
-        }
+    // Check if we're moving to a child element of the timeline
+    if (relatedTarget && timeline.contains(relatedTarget)) {
+        return; // Don't hide, we're still inside
+    }
+
+    // Stop auto-scrolling
+    clearInterval(autoScrollInterval);
+
+    // Hide the drop zone when truly leaving the timeline
+    if (dropZoneIndicator && dropZoneIndicator.parentElement === timeline) {
+        dropZoneIndicator.style.display = 'none';
     }
 }
 
@@ -97,9 +161,15 @@ async function handleDrop(e) {
 
     if (!draggedElement || !draggedData) return;
 
+    // Stop auto-scrolling
+    clearInterval(autoScrollInterval);
+
     const timeline = e.currentTarget;
-    const rect = timeline.getBoundingClientRect();
-    const y = e.clientY - rect.top + timeline.parentElement.scrollTop;
+    const container = timeline.parentElement;
+    const containerRect = container.getBoundingClientRect();
+
+    // Calculate position relative to timeline, accounting for scroll
+    const y = e.clientY - containerRect.top + container.scrollTop;
 
     // Snap to 15-minute grid
     const minutes = snapToGrid(y);
@@ -149,7 +219,21 @@ async function handleDrop(e) {
 function handleDragEnd(e) {
     if (draggedElement) {
         draggedElement.classList.remove('dragging');
+
+        // If this is a wrapped task, remove dragging class from sibling blocks too
+        if (draggedData) {
+            const timeline = draggedElement.closest('.timeline');
+            if (timeline) {
+                const siblingBlocks = timeline.querySelectorAll(
+                    `.task-block[data-id="${draggedData.id}"][data-type="${draggedData.type}"]`
+                );
+                siblingBlocks.forEach(block => block.classList.remove('dragging'));
+            }
+        }
     }
+
+    // Stop auto-scrolling
+    clearInterval(autoScrollInterval);
 
     // Hide drop zone indicator
     if (dropZoneIndicator) {
