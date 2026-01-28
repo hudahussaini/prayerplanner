@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Schedule</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Location Info Bar -->
+    <div id="location-info" class="location-info-bar">
+        <span class="location-status">Loading location...</span>
+    </div>
+
+    <div class="container">
+        <!-- Left Panel: Optimal Schedule -->
+        <div class="panel left-panel">
+            <div class="panel-header">
+                <h2>Optimal Schedule</h2>
+                <button id="add-task-btn" class="btn btn-primary">+ Add Task</button>
+            </div>
+
+            <!-- Add Task Form -->
+            <div id="add-task-form" class="form-container" style="display: none;">
+                <input type="text" id="task-name" placeholder="Task name" class="input-field">
+                <input type="number" id="task-duration" placeholder="Duration (minutes)" class="input-field" min="15" step="15">
+                <div class="form-buttons">
+                    <button id="save-task-btn" class="btn btn-success">Save</button>
+                    <button id="cancel-task-btn" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+
+            <!-- Timeline -->
+            <div class="timeline-container">
+                <div id="optimal-timeline" class="timeline"></div>
+            </div>
+        </div>
+
+        <!-- Right Panel: Daily Schedule -->
+        <div class="panel right-panel">
+            <div class="panel-header">
+                <h2>Today's Schedule</h2>
+                <button id="sync-btn" class="btn btn-primary">Sync from Optimal</button>
+            </div>
+
+            <!-- Timeline -->
+            <div class="timeline-container">
+                <div id="daily-timeline" class="timeline"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/location.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/schedule.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dragdrop.js') }}"></script>
+</body>
+</html>

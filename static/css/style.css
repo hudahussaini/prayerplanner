@@ -1,0 +1,347 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: #F5F5F5;
+    padding: 20px;
+}
+
+.location-info-bar {
+    background-color: white;
+    padding: 10px 20px;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    max-width: 1600px;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    gap: 15px;
+    align-items: center;
+    font-size: 14px;
+}
+
+.location-status {
+    color: #666;
+}
+
+.location-status.error {
+    color: #ff6b6b;
+}
+
+.prayer-time {
+    color: #4ECDC4;
+    font-weight: 600;
+}
+
+.container {
+    display: flex;
+    gap: 20px;
+    max-width: 1600px;
+    margin: 0 auto;
+    height: calc(100vh - 100px);
+}
+
+.panel {
+    flex: 1;
+    background-color: white;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.panel-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+}
+
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.btn-primary {
+    background-color: #4ECDC4;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #45b8b0;
+}
+
+.btn-success {
+    background-color: #00B894;
+    color: white;
+}
+
+.btn-secondary {
+    background-color: #ddd;
+    color: #333;
+}
+
+.form-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 10px;
+}
+
+.input-field {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: #4ECDC4;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.timeline-container {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.timeline {
+    position: relative;
+    min-height: 1440px; /* 24 hours * 60px per hour */
+}
+
+.hour-marker {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 60px;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    align-items: flex-start;
+}
+
+.hour-label {
+    position: absolute;
+    left: 0;
+    top: -8px;
+    font-size: 12px;
+    color: #999;
+    font-weight: 500;
+    background-color: white;
+    padding: 0 5px;
+}
+
+.task-block {
+    position: absolute;
+    left: 60px;
+    right: 10px;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: move;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s;
+    color: white;
+    font-weight: 500;
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+}
+
+.task-block:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(-1px);
+}
+
+.task-block.dragging {
+    opacity: 0.5;
+    cursor: grabbing;
+}
+
+.task-name {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.task-time {
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.task-actions {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: flex;
+    gap: 5px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.task-block:hover .task-actions {
+    opacity: 1;
+}
+
+.action-btn {
+    background-color: rgba(255, 255, 255, 0.3);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+.drop-zone {
+    position: absolute;
+    left: 60px;
+    right: 10px;
+    background-color: rgba(78, 205, 196, 0.1);
+    border: 2px dashed #4ECDC4;
+    border-radius: 8px;
+    pointer-events: none;
+    transition: all 0.2s;
+}
+
+/* Prayer time markers */
+.prayer-marker {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.prayer-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+}
+
+.prayer-label {
+    position: absolute;
+    right: 15px;
+    top: -10px;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    white-space: nowrap;
+}
+
+/* Sunrise - orange/yellow */
+.sunrise-marker .prayer-line {
+    background: linear-gradient(to right, rgba(255, 183, 77, 0.3), rgba(255, 183, 77, 0.8), rgba(255, 183, 77, 0.3));
+    box-shadow: 0 0 10px rgba(255, 183, 77, 0.5);
+}
+
+.sunrise-marker .prayer-label {
+    background-color: rgba(255, 183, 77, 0.95);
+}
+
+/* Dhuhr - bright yellow/gold */
+.dhuhr-marker .prayer-line {
+    background: linear-gradient(to right, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.8), rgba(255, 215, 0, 0.3));
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.dhuhr-marker .prayer-label {
+    background-color: rgba(255, 215, 0, 0.95);
+}
+
+/* Asr - amber/orange */
+.asr-marker .prayer-line {
+    background: linear-gradient(to right, rgba(255, 152, 0, 0.3), rgba(255, 152, 0, 0.8), rgba(255, 152, 0, 0.3));
+    box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+}
+
+.asr-marker .prayer-label {
+    background-color: rgba(255, 152, 0, 0.95);
+}
+
+/* Isha - deep blue/purple */
+.isha-marker .prayer-line {
+    background: linear-gradient(to right, rgba(63, 81, 181, 0.3), rgba(63, 81, 181, 0.8), rgba(63, 81, 181, 0.3));
+    box-shadow: 0 0 10px rgba(63, 81, 181, 0.5);
+}
+
+.isha-marker .prayer-label {
+    background-color: rgba(63, 81, 181, 0.95);
+}
+
+/* Scrollbar styling */
+.timeline-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.timeline-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.timeline-container::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 10px;
+}
+
+.timeline-container::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .container {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .panel {
+        min-height: 600px;
+    }
+}
