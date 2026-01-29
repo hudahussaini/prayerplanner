@@ -119,7 +119,7 @@ function handleDragOver(e) {
         }, 20);
     }
 
-    // Snap to 15-minute grid
+    // Snap to 5-minute grid
     const minutes = snapToGrid(y);
     const snappedY = minutes;
 
@@ -171,7 +171,7 @@ async function handleDrop(e) {
     // Calculate position relative to timeline, accounting for scroll
     const y = e.clientY - containerRect.top + container.scrollTop;
 
-    // Snap to 15-minute grid
+    // Snap to 5-minute grid
     const minutes = snapToGrid(y);
     const startTime = minutesFromSunsetToTime(minutes);
 

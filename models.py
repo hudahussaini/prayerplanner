@@ -37,6 +37,7 @@ class ScheduleEntry(db.Model):
     start_time = db.Column(db.String(5), nullable=False)  # HH:MM format
     color = db.Column(db.String(7), nullable=False)  # hex color
     date = db.Column(db.Date, default=datetime.utcnow().date)
+    completed = db.Column(db.Boolean, default=False)  # completion status
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -51,6 +52,7 @@ class ScheduleEntry(db.Model):
             'start_time': self.start_time,
             'color': self.color,
             'date': self.date.isoformat() if self.date else None,
+            'completed': self.completed,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

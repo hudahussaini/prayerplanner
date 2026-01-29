@@ -8,7 +8,7 @@ A Flask-based web application for managing optimal schedules and daily task plan
 - **Sunset-Based Timeline**: Timeline starts at sunset time based on your location (updates daily)
 - **Islamic Prayer Times**: Visual markers for Sunrise, Dhuhr, Asr, Sunset, and Isha
 - **Location Aware**: Automatically detects your location to calculate accurate prayer and sun times
-- **Drag & Drop**: Move tasks between panels and adjust timing with 15-minute snapping
+- **Drag & Drop**: Move tasks between panels and adjust timing with 5-minute snapping
 - **Sync Functionality**: Copy your optimal schedule to today's schedule
 - **Visual Timeline**: 24-hour timeline with hour markers (starting from sunset)
 - **Color-Coded Tasks**: Automatically assigned colors for easy visualization
@@ -83,7 +83,7 @@ The timeline displays color-coded prayer time markers:
 
 ### Moving Tasks
 - Drag task blocks up or down to change their start time
-- Tasks snap to 15-minute intervals
+- Tasks snap to 5-minute intervals
 - Drag tasks from optimal schedule to daily schedule to create entries
 
 ### Syncing Schedule
@@ -143,7 +143,7 @@ Scheduler/
 ## Notes
 
 - Port 5001 is used in development instead of 5000 to avoid conflicts with macOS AirPlay
-- Time slots snap to 15-minute intervals for easier scheduling
+- Time slots snap to 5-minute intervals for easier scheduling
 - Tasks are color-coded automatically from a predefined palette
 - The application uses a single-page architecture for smooth interactions
 - Timeline starts at sunset time (Maghrib prayer) calculated daily based on your location

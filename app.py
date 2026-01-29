@@ -23,7 +23,7 @@ init_db(app)
 COLOR_PALETTE = [
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
     '#FFEAA7', '#74B9FF', '#A29BFE', '#FD79A8',
-    '#FDCB6E', '#6C5CE7', '#00B894'
+    '#FDCB6E', '#6C5CE7', '#00B894', '#2C3E50'  # Last one is free time
 ]
 
 def get_random_color():
@@ -140,6 +140,8 @@ def update_schedule_entry(entry_id):
         entry.color = data['color']
     if 'task_id' in data:
         entry.task_id = data['task_id']
+    if 'completed' in data:
+        entry.completed = data['completed']
 
     entry.updated_at = datetime.utcnow()
     db.session.commit()
@@ -173,7 +175,8 @@ def sync_schedule():
             duration=task.duration,
             start_time=task.start_time if task.start_time else '09:00',
             color=task.color,
-            date=today
+            date=today,
+            completed=False
         )
         db.session.add(entry)
 

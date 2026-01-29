@@ -10,6 +10,9 @@ const COLOR_PALETTE = [
     '#FDCB6E', '#6C5CE7', '#00B894'
 ];
 
+// Special free time color - doesn't count towards duration tracking
+const FREE_TIME_COLOR = '#2C3E50';
+
 let selectedColor = COLOR_PALETTE[1]; // Default to teal
 
 // Initialize app on page load
@@ -91,6 +94,7 @@ function initializeColorPalette() {
     const paletteContainer = document.getElementById('color-palette');
     const colorInput = document.getElementById('task-color');
 
+    // Add regular colors
     COLOR_PALETTE.forEach((color, index) => {
         const option = document.createElement('div');
         option.className = 'color-option';
@@ -112,6 +116,30 @@ function initializeColorPalette() {
 
         paletteContainer.appendChild(option);
     });
+
+    // Add free time color with special styling
+    const freeTimeOption = document.createElement('div');
+    freeTimeOption.className = 'color-option free-time-option';
+    freeTimeOption.style.backgroundColor = FREE_TIME_COLOR;
+    freeTimeOption.title = 'Free Time (flexible duration)';
+
+    const freeLabel = document.createElement('span');
+    freeLabel.className = 'free-time-label';
+    freeLabel.textContent = 'Free';
+    freeTimeOption.appendChild(freeLabel);
+
+    freeTimeOption.addEventListener('click', () => {
+        selectedColor = FREE_TIME_COLOR;
+        colorInput.value = FREE_TIME_COLOR;
+
+        // Update selected state
+        document.querySelectorAll('.color-option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+        freeTimeOption.classList.add('selected');
+    });
+
+    paletteContainer.appendChild(freeTimeOption);
 }
 
 async function handleSaveTask() {
@@ -123,8 +151,8 @@ async function handleSaveTask() {
         return;
     }
 
-    if (duration < 15) {
-        alert('Duration must be at least 15 minutes');
+    if (duration < 10) {
+        alert('Duration must be at least 10 minutes');
         return;
     }
 
@@ -282,6 +310,14 @@ function createSingleBlock(item, type, topPosition, height, isWrapped) {
     if (isWrapped) {
         block.classList.add('wrapped-task');
     }
+    // Add completed class if it's a schedule entry and completed
+    if (type === 'schedule' && item.completed) {
+        block.classList.add('completed');
+    }
+    // Add small class for blocks under 60px
+    if (height < 60) {
+        block.classList.add('task-small');
+    }
     block.style.backgroundColor = item.color;
     block.style.height = `${height}px`;
     block.style.top = `${topPosition}px`;
@@ -289,6 +325,19 @@ function createSingleBlock(item, type, topPosition, height, isWrapped) {
     block.dataset.id = item.id;
     block.dataset.type = type;
     block.dataset.fullDuration = item.duration; // Store original duration for drag/drop
+
+    // Add checkbox for schedule entries (only on non-wrapped blocks)
+    if (type === 'schedule' && !isWrapped) {
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'task-checkbox';
+        checkbox.checked = item.completed || false;
+        checkbox.onclick = (e) => {
+            e.stopPropagation();
+            handleToggleComplete(item.id, !item.completed);
+        };
+        block.appendChild(checkbox);
+    }
 
     // Create content
     const nameDiv = document.createElement('div');
@@ -303,6 +352,73 @@ function createSingleBlock(item, type, topPosition, height, isWrapped) {
     }
     if (isWrapped) {
         timeDiv.textContent += ' (continued)';
+    }
+
+    // Add tracking info for optimal tasks (not on wrapped blocks)
+    if (type === 'task' && !isWrapped) {
+        const tracking = calculateColorTracking(item.color, item.duration);
+
+        // Create tracking container
+        const trackingContainer = document.createElement('div');
+        trackingContainer.className = 'task-tracking';
+
+        if (tracking.isFreeTime) {
+            // Special display for free time
+            trackingContainer.classList.add('free-time-tracking');
+            const freeLabel = document.createElement('span');
+            freeLabel.className = 'free-time-badge';
+            freeLabel.textContent = '⚡ Flexible';
+            freeLabel.title = 'Free time - duration is flexible';
+            trackingContainer.appendChild(freeLabel);
+        } else {
+            // Regular tracking display
+            // Add status indicator dot
+            const statusDot = document.createElement('span');
+            statusDot.className = `status-dot ${tracking.status}`;
+            statusDot.title = tracking.statusText;
+            trackingContainer.appendChild(statusDot);
+
+            // Add tracking info text
+            const trackingInfo = document.createElement('div');
+            trackingInfo.className = 'tracking-info';
+
+            // Use compact format for small blocks
+            if (height < 60) {
+                trackingInfo.innerHTML = `
+                    <div class="tracking-row">
+                        <span class="tracking-value">S:${tracking.scheduled}</span>
+                    </div>
+                    <div class="tracking-row">
+                        <span class="tracking-value">C:${tracking.completed}</span>
+                    </div>
+                `;
+            } else {
+                trackingInfo.innerHTML = `
+                    <div class="tracking-row">
+                        <span class="tracking-label">Scheduled:</span>
+                        <span class="tracking-value">${tracking.scheduled}m</span>
+                    </div>
+                    <div class="tracking-row">
+                        <span class="tracking-label">Completed:</span>
+                        <span class="tracking-value">${tracking.completed}m</span>
+                    </div>
+                `;
+            }
+            trackingContainer.appendChild(trackingInfo);
+
+            // Add progress bar (only for larger blocks)
+            if (height >= 60) {
+                const progressBar = document.createElement('div');
+                progressBar.className = 'task-progress-container';
+                const progressFill = document.createElement('div');
+                progressFill.className = 'task-progress-fill';
+                progressFill.style.width = `${tracking.completionPercent}%`;
+                progressBar.appendChild(progressFill);
+                trackingContainer.appendChild(progressBar);
+            }
+        }
+
+        block.appendChild(trackingContainer);
     }
 
     // Create action buttons
@@ -357,6 +473,7 @@ function showColorPicker(item, type, blockElement) {
     const colorsGrid = document.createElement('div');
     colorsGrid.className = 'color-picker-grid';
 
+    // Add regular colors
     COLOR_PALETTE.forEach(color => {
         const colorOption = document.createElement('div');
         colorOption.className = 'color-picker-option';
@@ -385,6 +502,36 @@ function showColorPicker(item, type, blockElement) {
 
         colorsGrid.appendChild(colorOption);
     });
+
+    // Add free time option
+    const freeTimeOption = document.createElement('div');
+    freeTimeOption.className = 'color-picker-option';
+    freeTimeOption.style.backgroundColor = FREE_TIME_COLOR;
+    freeTimeOption.style.border = '2px solid #555';
+    freeTimeOption.innerHTML = '<span style="color: white; font-size: 8px; font-weight: 700;">FREE</span>';
+    if (FREE_TIME_COLOR === item.color) {
+        freeTimeOption.classList.add('selected');
+    }
+
+    freeTimeOption.onclick = async () => {
+        try {
+            if (type === 'task') {
+                await api.updateTask(item.id, { color: FREE_TIME_COLOR });
+                await loadTasks();
+                renderTasks();
+            } else {
+                await api.updateScheduleEntry(item.id, { color: FREE_TIME_COLOR });
+                await loadSchedule();
+                renderSchedule();
+            }
+            picker.remove();
+        } catch (error) {
+            console.error('Failed to update color:', error);
+            alert('Failed to update color. Please try again.');
+        }
+    };
+
+    colorsGrid.appendChild(freeTimeOption);
 
     const customInput = document.createElement('input');
     customInput.type = 'color';
@@ -445,10 +592,25 @@ async function handleDeleteItem(id, type) {
             await api.deleteScheduleEntry(id);
             scheduleEntries = scheduleEntries.filter(e => e.id !== id);
             renderSchedule();
+            // Update optimal tasks to reflect new completion status
+            renderTasks();
         }
     } catch (error) {
         console.error('Failed to delete item:', error);
         alert('Failed to delete item. Please try again.');
+    }
+}
+
+async function handleToggleComplete(entryId, completed) {
+    try {
+        await api.updateScheduleEntry(entryId, { completed: completed });
+        await loadSchedule();
+        renderSchedule();
+        // Update optimal tasks to reflect new completion status
+        renderTasks();
+    } catch (error) {
+        console.error('Failed to toggle completion:', error);
+        alert('Failed to update completion status. Please try again.');
     }
 }
 
@@ -463,6 +625,61 @@ function minutesToTime(minutes) {
     return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
 }
 
-function snapToGrid(minutes, gridSize = 15) {
+function snapToGrid(minutes, gridSize = 5) {
     return Math.round(minutes / gridSize) * gridSize;
+}
+
+// Calculate tracking info for a color
+function calculateColorTracking(color, optimalDuration) {
+    // Free time is flexible - no tracking needed
+    if (color === FREE_TIME_COLOR) {
+        return {
+            scheduled: 0,
+            completed: 0,
+            status: 'free',
+            statusText: 'Flexible',
+            completionPercent: 0,
+            isFreeTime: true
+        };
+    }
+
+    // Sum all scheduled durations for this color in today's schedule
+    const scheduled = scheduleEntries
+        .filter(entry => entry.color === color)
+        .reduce((sum, entry) => sum + entry.duration, 0);
+
+    // Sum all completed durations for this color
+    const completed = scheduleEntries
+        .filter(entry => entry.color === color && entry.completed)
+        .reduce((sum, entry) => sum + entry.duration, 0);
+
+    // Calculate status based on scheduled vs optimal (within 15 min tolerance)
+    const diff = Math.abs(scheduled - optimalDuration);
+    let status, statusText;
+
+    if (scheduled === 0) {
+        status = 'red';
+        statusText = 'Not scheduled';
+    } else if (diff <= 15) {
+        status = 'green';
+        statusText = 'On track';
+    } else if (diff <= 30) {
+        status = 'yellow';
+        statusText = `Off by ${diff} min`;
+    } else {
+        status = 'red';
+        statusText = `Off by ${diff} min`;
+    }
+
+    // Calculate completion percentage based on scheduled amount
+    const completionPercent = scheduled > 0 ? Math.min(100, (completed / scheduled) * 100) : 0;
+
+    return {
+        scheduled,
+        completed,
+        status,
+        statusText,
+        completionPercent: Math.round(completionPercent),
+        isFreeTime: false
+    };
 }

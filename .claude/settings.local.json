@@ -3,7 +3,11 @@
     "allow": [
       "Bash(curl:*)",
       "Bash(python3:*)",
-      "Bash(lsof:*)"
+      "Bash(lsof:*)",
+      "Bash(source:*)",
+      "Bash(python:*)",
+      "Bash(pkill:*)",
+      "Bash(xargs:*)"
     ]
   }
 }
