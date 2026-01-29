@@ -24,6 +24,11 @@
             <div id="add-task-form" class="form-container" style="display: none;">
                 <input type="text" id="task-name" placeholder="Task name" class="input-field">
                 <input type="number" id="task-duration" placeholder="Duration (minutes)" class="input-field" min="15" step="15">
+                <div class="color-picker-section">
+                    <label for="task-color" class="color-label">Color:</label>
+                    <div class="color-options" id="color-palette"></div>
+                    <input type="color" id="task-color" class="color-input" value="#4ECDC4">
+                </div>
                 <div class="form-buttons">
                     <button id="save-task-btn" class="btn btn-success">Save</button>
                     <button id="cancel-task-btn" class="btn btn-secondary">Cancel</button>

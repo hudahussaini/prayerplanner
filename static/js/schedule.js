@@ -3,6 +3,15 @@
 let tasks = [];
 let scheduleEntries = [];
 
+// Color palette for tasks (matching backend)
+const COLOR_PALETTE = [
+    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
+    '#FFEAA7', '#74B9FF', '#A29BFE', '#FD79A8',
+    '#FDCB6E', '#6C5CE7', '#00B894'
+];
+
+let selectedColor = COLOR_PALETTE[1]; // Default to teal
+
 // Initialize app on page load
 document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
@@ -42,6 +51,9 @@ async function loadSchedule() {
 }
 
 function setupEventListeners() {
+    // Initialize color palette
+    initializeColorPalette();
+
     // Add task button
     document.getElementById('add-task-btn').addEventListener('click', () => {
         document.getElementById('add-task-form').style.display = 'block';
@@ -64,6 +76,42 @@ function setupEventListeners() {
     document.getElementById('task-duration').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') handleSaveTask();
     });
+
+    // Color input change
+    document.getElementById('task-color').addEventListener('input', (e) => {
+        selectedColor = e.target.value;
+        // Deselect all palette options
+        document.querySelectorAll('.color-option').forEach(opt => {
+            opt.classList.remove('selected');
+        });
+    });
+}
+
+function initializeColorPalette() {
+    const paletteContainer = document.getElementById('color-palette');
+    const colorInput = document.getElementById('task-color');
+
+    COLOR_PALETTE.forEach((color, index) => {
+        const option = document.createElement('div');
+        option.className = 'color-option';
+        option.style.backgroundColor = color;
+        if (index === 1) {
+            option.classList.add('selected'); // Select default color
+        }
+
+        option.addEventListener('click', () => {
+            selectedColor = color;
+            colorInput.value = color;
+
+            // Update selected state
+            document.querySelectorAll('.color-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            option.classList.add('selected');
+        });
+
+        paletteContainer.appendChild(option);
+    });
 }
 
 async function handleSaveTask() {
@@ -81,7 +129,7 @@ async function handleSaveTask() {
     }
 
     try {
-        const newTask = await api.createTask({ name, duration });
+        const newTask = await api.createTask({ name, duration, color: selectedColor });
         tasks.push(newTask);
         renderTasks();
 
@@ -96,6 +144,19 @@ async function handleSaveTask() {
 function clearTaskForm() {
     document.getElementById('task-name').value = '';
     document.getElementById('task-duration').value = '';
+
+    // Reset color to default
+    selectedColor = COLOR_PALETTE[1];
+    document.getElementById('task-color').value = selectedColor;
+
+    // Update selected state in palette
+    document.querySelectorAll('.color-option').forEach((opt, index) => {
+        if (index === 1) {
+            opt.classList.add('selected');
+        } else {
+            opt.classList.remove('selected');
+        }
+    });
 }
 
 async function handleSyncSchedule() {
@@ -248,6 +309,19 @@ function createSingleBlock(item, type, topPosition, height, isWrapped) {
     const actionsDiv = document.createElement('div');
     actionsDiv.className = 'task-actions';
 
+    // Color picker button (not shown on wrapped continuation blocks)
+    if (!isWrapped) {
+        const colorBtn = document.createElement('button');
+        colorBtn.className = 'action-btn color-btn';
+        colorBtn.innerHTML = '🎨';
+        colorBtn.title = 'Change color';
+        colorBtn.onclick = (e) => {
+            e.stopPropagation();
+            showColorPicker(item, type, block);
+        };
+        actionsDiv.appendChild(colorBtn);
+    }
+
     const deleteBtn = document.createElement('button');
     deleteBtn.className = 'action-btn';
     deleteBtn.textContent = '×';
@@ -263,6 +337,98 @@ function createSingleBlock(item, type, topPosition, height, isWrapped) {
     block.appendChild(actionsDiv);
 
     return block;
+}
+
+function showColorPicker(item, type, blockElement) {
+    // Remove any existing color picker
+    const existingPicker = document.querySelector('.color-picker-popup');
+    if (existingPicker) {
+        existingPicker.remove();
+    }
+
+    // Create color picker popup
+    const picker = document.createElement('div');
+    picker.className = 'color-picker-popup';
+
+    const title = document.createElement('div');
+    title.className = 'color-picker-title';
+    title.textContent = 'Choose a color';
+
+    const colorsGrid = document.createElement('div');
+    colorsGrid.className = 'color-picker-grid';
+
+    COLOR_PALETTE.forEach(color => {
+        const colorOption = document.createElement('div');
+        colorOption.className = 'color-picker-option';
+        colorOption.style.backgroundColor = color;
+        if (color === item.color) {
+            colorOption.classList.add('selected');
+        }
+
+        colorOption.onclick = async () => {
+            try {
+                if (type === 'task') {
+                    await api.updateTask(item.id, { color: color });
+                    await loadTasks();
+                    renderTasks();
+                } else {
+                    await api.updateScheduleEntry(item.id, { color: color });
+                    await loadSchedule();
+                    renderSchedule();
+                }
+                picker.remove();
+            } catch (error) {
+                console.error('Failed to update color:', error);
+                alert('Failed to update color. Please try again.');
+            }
+        };
+
+        colorsGrid.appendChild(colorOption);
+    });
+
+    const customInput = document.createElement('input');
+    customInput.type = 'color';
+    customInput.className = 'color-picker-custom';
+    customInput.value = item.color;
+    customInput.onchange = async (e) => {
+        try {
+            if (type === 'task') {
+                await api.updateTask(item.id, { color: e.target.value });
+                await loadTasks();
+                renderTasks();
+            } else {
+                await api.updateScheduleEntry(item.id, { color: e.target.value });
+                await loadSchedule();
+                renderSchedule();
+            }
+            picker.remove();
+        } catch (error) {
+            console.error('Failed to update color:', error);
+            alert('Failed to update color. Please try again.');
+        }
+    };
+
+    picker.appendChild(title);
+    picker.appendChild(colorsGrid);
+    picker.appendChild(customInput);
+
+    // Position the picker near the block
+    const rect = blockElement.getBoundingClientRect();
+    picker.style.position = 'fixed';
+    picker.style.top = `${rect.top}px`;
+    picker.style.left = `${rect.right + 10}px`;
+
+    document.body.appendChild(picker);
+
+    // Close picker when clicking outside
+    setTimeout(() => {
+        document.addEventListener('click', function closePickerHandler(e) {
+            if (!picker.contains(e.target) && !blockElement.contains(e.target)) {
+                picker.remove();
+                document.removeEventListener('click', closePickerHandler);
+            }
+        });
+    }, 10);
 }
 
 async function handleDeleteItem(id, type) {
