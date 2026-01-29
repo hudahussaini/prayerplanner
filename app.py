@@ -38,8 +38,14 @@ def index():
 # Task API Endpoints
 @app.route('/api/tasks', methods=['GET'])
 def get_tasks():
-    """Get all tasks"""
-    tasks = Task.query.order_by(Task.order_index).all()
+    """Get all tasks, optionally filtered by template_id"""
+    template_id = request.args.get('template_id', type=int)
+
+    if template_id:
+        tasks = Task.query.filter_by(template_id=template_id).order_by(Task.order_index).all()
+    else:
+        tasks = Task.query.order_by(Task.order_index).all()
+
     return jsonify([task.to_dict() for task in tasks])
 
 @app.route('/api/tasks', methods=['POST'])
@@ -55,7 +61,8 @@ def create_task():
         duration=data['duration'],
         color=data.get('color', get_random_color()),
         start_time=data.get('start_time'),
-        order_index=data.get('order_index', 0)
+        order_index=data.get('order_index', 0),
+        template_id=data.get('template_id', 1)
     )
 
     db.session.add(task)
@@ -160,12 +167,15 @@ def delete_schedule_entry(entry_id):
 @app.route('/api/schedule/sync', methods=['POST'])
 def sync_schedule():
     """Sync tasks from optimal schedule to daily schedule"""
+    data = request.json or {}
+    template_id = data.get('template_id', 1)
+
     # Delete existing entries for today
     today = date.today()
     ScheduleEntry.query.filter_by(date=today).delete()
 
-    # Get all tasks ordered by their position
-    tasks = Task.query.order_by(Task.order_index).all()
+    # Get all tasks for the specified template ordered by their position
+    tasks = Task.query.filter_by(template_id=template_id).order_by(Task.order_index).all()
 
     # Create schedule entries from tasks
     for task in tasks:
@@ -185,6 +195,19 @@ def sync_schedule():
     # Return the new schedule
     entries = ScheduleEntry.query.filter_by(date=today).order_by(ScheduleEntry.start_time).all()
     return jsonify([entry.to_dict() for entry in entries])
+
+@app.route('/api/templates', methods=['GET'])
+def get_templates():
+    """Get list of all templates with task counts"""
+    templates = []
+    for i in range(1, 9):  # 8 templates
+        count = Task.query.filter_by(template_id=i).count()
+        templates.append({
+            'id': i,
+            'name': f'Schedule {i}',
+            'task_count': count
+        })
+    return jsonify(templates)
 
 @app.route('/api/sunset', methods=['GET'])
 def get_sunset():

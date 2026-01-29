@@ -7,8 +7,9 @@ const API_BASE = window.location.hostname === 'localhost'
 
 const api = {
     // Task endpoints
-    async getTasks() {
-        const response = await fetch(`${API_BASE}/tasks`);
+    async getTasks(templateId) {
+        const url = templateId ? `${API_BASE}/tasks?template_id=${templateId}` : `${API_BASE}/tasks`;
+        const response = await fetch(url);
         if (!response.ok) throw new Error('Failed to fetch tasks');
         return response.json();
     },
@@ -76,9 +77,11 @@ const api = {
         return response.json();
     },
 
-    async syncSchedule() {
+    async syncSchedule(templateId) {
         const response = await fetch(`${API_BASE}/schedule/sync`, {
-            method: 'POST'
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ template_id: templateId })
         });
         if (!response.ok) throw new Error('Failed to sync schedule');
         return response.json();

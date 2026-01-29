@@ -25,6 +25,9 @@ async function initializeLocation() {
         return;
     }
 
+    // Store old sunrise time before updating
+    const oldSunriseTime = sunriseTime;
+
     // If cached data is missing prayer times, clear it and fetch fresh data
     if (cached && (!cached.sunriseTime || !cached.dhuhrTime)) {
         localStorage.removeItem('sunsetData');
@@ -48,6 +51,25 @@ async function initializeLocation() {
         ishaTime = sunsetData.ishaTime;
 
         updateLocationUI(sunsetData);
+
+        // Get the last known sunrise time
+        const lastKnownSunrise = localStorage.getItem('lastSunriseTime');
+
+        // Check if sunrise time changed significantly (more than 5 minutes)
+        if (lastKnownSunrise && lastKnownSunrise !== sunriseTime) {
+            const shiftMinutes = calculateTimeShift(lastKnownSunrise, sunriseTime);
+            if (Math.abs(shiftMinutes) >= 5) {
+                // Notify schedule.js about prayer time shift
+                if (window.onPrayerTimeShift) {
+                    setTimeout(() => {
+                        window.onPrayerTimeShift(shiftMinutes);
+                    }, 1000); // Delay to let UI load first
+                }
+            }
+        }
+
+        // Store current sunrise time for future comparison
+        localStorage.setItem('lastSunriseTime', sunriseTime);
     } catch (error) {
         console.error('Failed to get location or sunset time:', error);
         updateLocationUI({
@@ -61,6 +83,17 @@ async function initializeLocation() {
             ishaTime: ishaTime
         });
     }
+}
+
+// Calculate time shift in minutes between two time strings
+function calculateTimeShift(oldTime, newTime) {
+    const [oldHours, oldMinutes] = oldTime.split(':').map(Number);
+    const [newHours, newMinutes] = newTime.split(':').map(Number);
+
+    const oldTotalMinutes = oldHours * 60 + oldMinutes;
+    const newTotalMinutes = newHours * 60 + newMinutes;
+
+    return newTotalMinutes - oldTotalMinutes;
 }
 
 function getUserLocation() {

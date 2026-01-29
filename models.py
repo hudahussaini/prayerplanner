@@ -11,6 +11,7 @@ class Task(db.Model):
     color = db.Column(db.String(7), nullable=False)  # hex color
     start_time = db.Column(db.String(5), nullable=True)  # HH:MM format
     order_index = db.Column(db.Integer, default=0)
+    template_id = db.Column(db.Integer, default=1)  # which optimal schedule template (1-8)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -22,6 +23,7 @@ class Task(db.Model):
             'color': self.color,
             'start_time': self.start_time,
             'order_index': self.order_index,
+            'template_id': self.template_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }

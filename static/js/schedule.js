@@ -2,6 +2,7 @@
 
 let tasks = [];
 let scheduleEntries = [];
+let currentTemplateId = 1; // Current optimal schedule template (1-8)
 
 // Color palette for tasks (matching backend)
 const COLOR_PALETTE = [
@@ -23,6 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function initializeApp() {
     try {
+        // Set up prayer time shift handler
+        window.onPrayerTimeShift = handlePrayerTimeShift;
+
         // Initialize location and sunset time first
         await initializeLocation();
 
@@ -45,8 +49,69 @@ async function initializeApp() {
     }
 }
 
+async function handlePrayerTimeShift(shiftMinutes) {
+    const direction = shiftMinutes > 0 ? 'later' : 'earlier';
+    const absMinutes = Math.abs(shiftMinutes);
+
+    const message = `Prayer times have shifted ${absMinutes} minutes ${direction}. ` +
+                   `Would you like to adjust all task times in your Optimal Schedules accordingly?`;
+
+    if (confirm(message)) {
+        try {
+            // Shift all tasks across all templates
+            const shiftsApplied = await shiftAllTaskTimes(shiftMinutes);
+
+            // Reload and re-render
+            await loadTasks();
+            renderTasks();
+
+            alert(`Successfully shifted ${shiftsApplied} tasks by ${absMinutes} minutes ${direction}.`);
+        } catch (error) {
+            console.error('Failed to shift task times:', error);
+            alert('Failed to adjust task times. Please try manually.');
+        }
+    }
+}
+
+async function shiftAllTaskTimes(shiftMinutes) {
+    let shiftsApplied = 0;
+
+    // Get all tasks across all templates
+    const allTasksResponse = await fetch(`${window.location.origin}/api/tasks`);
+    const allTasks = await allTasksResponse.json();
+
+    // Shift each task that has a start_time
+    for (const task of allTasks) {
+        if (task.start_time) {
+            const newTime = shiftTime(task.start_time, shiftMinutes);
+            await api.updateTask(task.id, { start_time: newTime });
+            shiftsApplied++;
+        }
+    }
+
+    return shiftsApplied;
+}
+
+function shiftTime(timeStr, shiftMinutes) {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    let totalMinutes = hours * 60 + minutes + shiftMinutes;
+
+    // Handle day wrap
+    if (totalMinutes < 0) {
+        totalMinutes += 24 * 60;
+    } else if (totalMinutes >= 24 * 60) {
+        totalMinutes -= 24 * 60;
+    }
+
+    const newHours = Math.floor(totalMinutes / 60);
+    const newMinutes = totalMinutes % 60;
+
+    return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
+}
+
 async function loadTasks() {
-    tasks = await api.getTasks();
+    tasks = await api.getTasks(currentTemplateId);
+    updateTemplateNavigation();
 }
 
 async function loadSchedule() {
@@ -56,6 +121,21 @@ async function loadSchedule() {
 function setupEventListeners() {
     // Initialize color palette
     initializeColorPalette();
+
+    // Template navigation
+    document.getElementById('prev-template-btn').addEventListener('click', () => {
+        if (currentTemplateId > 1) {
+            currentTemplateId--;
+            loadTasks().then(() => renderTasks());
+        }
+    });
+
+    document.getElementById('next-template-btn').addEventListener('click', () => {
+        if (currentTemplateId < 8) {
+            currentTemplateId++;
+            loadTasks().then(() => renderTasks());
+        }
+    });
 
     // Add task button
     document.getElementById('add-task-btn').addEventListener('click', () => {
@@ -88,6 +168,28 @@ function setupEventListeners() {
             opt.classList.remove('selected');
         });
     });
+
+    // Keyboard shortcuts for template navigation
+    document.addEventListener('keydown', (e) => {
+        // Only if no input is focused
+        if (document.activeElement.tagName === 'INPUT') return;
+
+        if (e.key === 'ArrowLeft' && currentTemplateId > 1) {
+            e.preventDefault();
+            currentTemplateId--;
+            loadTasks().then(() => renderTasks());
+        } else if (e.key === 'ArrowRight' && currentTemplateId < 8) {
+            e.preventDefault();
+            currentTemplateId++;
+            loadTasks().then(() => renderTasks());
+        }
+    });
+}
+
+function updateTemplateNavigation() {
+    document.getElementById('template-title').textContent = `Optimal Schedule ${currentTemplateId}`;
+    document.getElementById('prev-template-btn').disabled = currentTemplateId === 1;
+    document.getElementById('next-template-btn').disabled = currentTemplateId === 8;
 }
 
 function initializeColorPalette() {
@@ -157,7 +259,12 @@ async function handleSaveTask() {
     }
 
     try {
-        const newTask = await api.createTask({ name, duration, color: selectedColor });
+        const newTask = await api.createTask({
+            name,
+            duration,
+            color: selectedColor,
+            template_id: currentTemplateId
+        });
         tasks.push(newTask);
         renderTasks();
 
@@ -188,13 +295,14 @@ function clearTaskForm() {
 }
 
 async function handleSyncSchedule() {
-    if (!confirm('This will replace your current schedule. Continue?')) {
+    if (!confirm(`This will sync Optimal Schedule ${currentTemplateId} to today. Continue?`)) {
         return;
     }
 
     try {
-        scheduleEntries = await api.syncSchedule();
+        scheduleEntries = await api.syncSchedule(currentTemplateId);
         renderSchedule();
+        renderTasks(); // Update tracking info
         alert('Schedule synced successfully!');
     } catch (error) {
         console.error('Failed to sync schedule:', error);
