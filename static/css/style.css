@@ -20,9 +20,42 @@ body {
     margin-right: auto;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     display: flex;
+    flex-wrap: wrap;
     gap: 15px;
     align-items: center;
     font-size: 14px;
+}
+
+@media (max-width: 768px) {
+    .location-info-bar {
+        padding: 8px 10px;
+        gap: 6px 10px;
+        font-size: 11px;
+        row-gap: 6px;
+    }
+
+    .location-status {
+        width: 100%;
+        margin-bottom: 2px;
+    }
+
+    .prayer-time {
+        font-size: 10px;
+        white-space: nowrap;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+    .location-info-bar {
+        padding: 6px 8px;
+        gap: 4px 8px;
+        font-size: 10px;
+    }
+
+    .prayer-time {
+        font-size: 9px;
+    }
 }
 
 .location-status {
