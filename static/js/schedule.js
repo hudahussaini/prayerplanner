@@ -314,8 +314,10 @@ function createSingleBlock(item, type, topPosition, height, isWrapped) {
     if (type === 'schedule' && item.completed) {
         block.classList.add('completed');
     }
-    // Add small class for blocks under 60px
-    if (height < 60) {
+    // Add size classes
+    if (height < 25) {
+        block.classList.add('task-tiny');
+    } else if (height < 60) {
         block.classList.add('task-small');
     }
     block.style.backgroundColor = item.color;

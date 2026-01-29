@@ -248,7 +248,6 @@ body {
     flex-direction: column;
     justify-content: flex-start;
     overflow: visible;
-    min-height: 35px;
 }
 
 .task-block:hover {
@@ -281,6 +280,15 @@ body {
     accent-color: white;
 }
 
+/* Smaller checkbox for very small blocks */
+.task-block.task-tiny .task-checkbox {
+    width: 12px;
+    height: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    left: 4px;
+}
+
 .task-tracking {
     position: absolute;
     top: 6px;
@@ -298,14 +306,27 @@ body {
     overflow: visible;
 }
 
-/* Horizontal layout for small blocks (less than 60px tall) */
-.task-block.task-small .task-tracking {
+/* Hide tracking on hover only for small blocks */
+.task-block.task-small .task-tracking,
+.task-block.task-tiny .task-tracking {
     flex-direction: row;
     align-items: center;
     gap: 6px;
     padding: 3px 6px;
     top: 3px;
     right: 3px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.task-block.task-small:hover .task-tracking,
+.task-block.task-tiny:hover .task-tracking {
+    opacity: 1;
+}
+
+/* Hide tracking completely on tiny blocks to save space */
+.task-block.task-tiny .task-tracking {
+    display: none;
 }
 
 .task-block.task-small .task-progress-container {
@@ -352,10 +373,37 @@ body {
 .task-block.task-small .task-name {
     font-size: 11px;
     margin-bottom: 1px;
+    padding-right: 5px; /* Less padding since tracking is hidden */
 }
 
 .task-block.task-small .task-time {
     font-size: 9px;
+}
+
+/* When hovering, add padding back for tracking */
+.task-block.task-small:hover .task-name {
+    padding-right: 80px;
+}
+
+/* Very small blocks (less than 25px) - ultra compact */
+.task-block.task-tiny {
+    padding: 4px 8px;
+}
+
+.task-block.task-tiny .task-name {
+    font-size: 10px;
+    margin-bottom: 0;
+    line-height: 1.1;
+    padding-right: 30px; /* Room for action buttons */
+}
+
+.task-block.task-tiny .task-time {
+    display: none; /* Hide duration on very small blocks */
+}
+
+/* Adjust padding for very small blocks with checkbox */
+.task-block.task-tiny:has(.task-checkbox) .task-name {
+    padding-left: 18px;
 }
 
 .status-dot {
@@ -431,7 +479,17 @@ body {
 
 /* Add left padding when checkbox is present (schedule entries) */
 .task-block:has(.task-checkbox) .task-name {
-    padding-left: 30px;
+    padding-left: 28px;
+}
+
+.task-block:has(.task-checkbox) .task-time {
+    padding-left: 28px;
+}
+
+/* Extra padding for small blocks with checkbox */
+.task-block.task-small:has(.task-checkbox) .task-name,
+.task-block.task-small:has(.task-checkbox) .task-time {
+    padding-left: 26px;
 }
 
 .task-time {
@@ -483,6 +541,26 @@ body {
 
 .action-btn.color-btn {
     font-size: 14px;
+}
+
+/* Smaller action buttons for very small blocks */
+.task-block.task-tiny .action-btn {
+    width: 18px;
+    height: 18px;
+    font-size: 10px;
+}
+
+.task-block.task-tiny .action-btn.color-btn {
+    font-size: 11px;
+}
+
+/* Position action buttons properly on tiny blocks */
+.task-block.task-tiny .task-actions {
+    top: 50%;
+    transform: translateY(-50%);
+    bottom: auto;
+    right: 3px;
+    padding: 2px;
 }
 
 /* Color picker popup */
