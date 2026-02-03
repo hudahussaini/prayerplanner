@@ -26,7 +26,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 CORS(app)
 
 # Initialize database
-init_db(app)
+try:
+    init_db(app)
+except Exception as e:
+    print(f"Database initialization error: {e}")
+    # Continue anyway - database might initialize on first request
 
 # Color palette for tasks
 COLOR_PALETTE = [
