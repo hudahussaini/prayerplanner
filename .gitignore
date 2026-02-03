@@ -30,3 +30,4 @@ Thumbs.db
 
 # Data directory (contains database)
 data/
+.vercel

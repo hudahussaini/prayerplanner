@@ -8,11 +8,20 @@ from models import Task, ScheduleEntry
 
 app = Flask(__name__)
 
-# Ensure data directory exists
-data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-os.makedirs(data_dir, exist_ok=True)
+# Database configuration
+# Use Postgres on Vercel, SQLite locally
+postgres_url = os.environ.get('POSTGRES_URL')
+if postgres_url:
+    # Vercel Postgres - replace postgres:// with postgresql://
+    if postgres_url.startswith('postgres://'):
+        postgres_url = postgres_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = postgres_url
+else:
+    # Local development - use SQLite
+    data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+    os.makedirs(data_dir, exist_ok=True)
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(data_dir, "scheduler.db")}'
 
-app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{os.path.join(data_dir, "scheduler.db")}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 CORS(app)
 
@@ -275,7 +284,7 @@ def get_sunset():
 
 if __name__ == '__main__':
     # Get port from environment variable (Render sets this) or default to 5001
-    port = int(os.environ.get('PORT', 5001))
+    port = int(os.environ.get('PORT', 5002))
     # Get debug mode from environment variable or default to False
     debug = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     app.run(host='0.0.0.0', port=port, debug=debug)
